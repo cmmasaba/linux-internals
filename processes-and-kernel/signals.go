@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,7 +17,8 @@ func unixSignals() {
 
 	p, err := os.FindProcess(os.Getpid())
 	if err != nil {
-		log.Fatalf("error finding process: %s", err)
+		fmt.Fprintf(os.Stderr, "error finding process: %s\n", err)
+		os.Exit(1)
 	}
 
 	go func() {
@@ -26,9 +27,9 @@ func unixSignals() {
 		p.Signal(syscall.SIGABRT)
 
 		p.Signal(syscall.SIGINT)
-	} ()
+	}()
 
 	<-ctx.Done()
 
-	log.Printf("interrupt signal received, exiting...")
+	fmt.Printf("interrupt signal received, exiting...\n")
 }

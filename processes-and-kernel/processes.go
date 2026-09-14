@@ -1,8 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"io"
-	"log"
+	"os"
 	"os/exec"
 )
 
@@ -11,20 +12,24 @@ func childProcesses(command string, args []string) string {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatalf("error getting cmd stdout pipe: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error getting cmd stdout pipe: %s\n", err)
+		os.Exit(1)
 	}
 
 	if err := cmd.Start(); err != nil {
-		log.Fatalf("error waiting for cmd to start: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error waiting for cmd to start: %s\n", err)
+		os.Exit(1)
 	}
 
 	res, err := io.ReadAll(stdout)
 	if err != nil {
-		log.Fatalf("error reading output: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error reading output: %s\n", err)
+		os.Exit(1)
 	}
 
 	if err := cmd.Wait(); err != nil {
-		log.Fatalf("error waiting for cmd to terminate: %s", err)
+		fmt.Fprintf(os.Stderr, "error waiting for cmd to terminate: %s", err)
+		os.Exit(1)
 	}
 
 	return string(res)

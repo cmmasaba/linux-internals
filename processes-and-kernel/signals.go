@@ -23,7 +23,7 @@ func unixSignals() {
 
 	go func() {
 		p.Signal(syscall.SIGHUP)
-		p.Signal(syscall.SIGABRT)
+		p.Signal(syscall.SIGTERM)
 		p.Signal(syscall.SIGABRT)
 
 		p.Signal(syscall.SIGINT)

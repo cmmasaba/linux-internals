@@ -2,45 +2,28 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net"
 	"os"
 	"time"
 )
 
-func filesAndSockets() {
-	f, err := os.Open("test_file")
-	if err != nil {
-		log.Fatalf("error opening file: %s", err)
-	}
-
-	log.Printf("PID of the process: %d", os.Getpid())
-
-	// sleep for 2 mins to allow running shell commands
-	time.Sleep(time.Minute * 2)
-
-	f.Close()
-
-	log.Print("closing file descriptor")
-
-	time.Sleep(time.Minute * 1)
-}
-
-func leakFileDescriptors() {
+func fileDescriptors() {
 	ok := true
 	var fds []*os.File
 
 	for ok {
 		f, err := os.Open("test_file")
 		if err != nil {
-			log.Printf("error opening file: %s", err)
+			fmt.Fprintf(os.Stderr, "error opening file: %s\n", err)
 			ok = false
 		}
 
 		fds = append(fds, f)
 	}
 
-	log.Printf("Process PID: %d", os.Getpid())
+	fmt.Printf("Process PID: %d\n", os.Getpid())
+	fmt.Printf("Number of open file descriptors: %d\n", len(fds))
 
 	time.Sleep(time.Minute * 2)
 
@@ -63,7 +46,8 @@ func leakFileDescriptors() {
 func server(ctx context.Context) {
 	l, err := net.Listen("tcp", ":8586")
 	if err != nil {
-		log.Fatalf("error opening server: %s", err)
+		fmt.Fprintf(os.Stderr, "error opening server: %s\n", err)
+		os.Exit(1)
 	}
 
 	defer l.Close()
@@ -71,14 +55,15 @@ func server(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("closing server...")
+			fmt.Println("closing server...")
 			return
 		default:
 		}
 
 		conn, err := l.Accept()
 		if err != nil {
-			log.Fatalf("error accepting connection: %s", err)
+			fmt.Fprintf(os.Stderr, "error accepting connection: %s\n", err)
+			os.Exit(1)
 		}
 
 		go handleConnection(conn)
@@ -98,7 +83,8 @@ func client(ctx context.Context) {
 
 	conn, err := net.Dial("tcp", "localhost:8586")
 	if err != nil {
-		log.Fatalf("error dialing connection: %s", err)
+		fmt.Fprintf(os.Stderr, "error dialing connection: %s\n", err)
+		os.Exit(1)
 	}
 
 	defer conn.Close()
@@ -107,14 +93,16 @@ func client(ctx context.Context) {
 
 	_, err = conn.Read(b)
 	if err != nil {
-		log.Fatalf("error reading from socket: %s", err)
+		fmt.Fprintf(os.Stderr, "error reading from socket: %s\n", err)
+		os.Exit(1)
 	}
 }
 
 func sockets() {
-	start := time.Now()
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute*2))
 	defer cancel()
+
+	fmt.Printf("Process PID: %d\n", os.Getpid())
 
 	go server(ctx)
 
@@ -123,6 +111,4 @@ func sockets() {
 	}
 
 	<-ctx.Done()
-
-	log.Printf("total time: %f", time.Since(start).Minutes())
 }

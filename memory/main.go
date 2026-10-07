@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 )
 
@@ -57,7 +59,17 @@ func main() {
 
 		if *maxGB > 0 && float64(allocated)/GB >= *maxGB {
 			fmt.Println("Maximum reached")
-			select {}
+			signals := make(chan os.Signal, 1)
+
+			signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+			<-signals
+
+			runtime.KeepAlive(blocks)
+
+			fmt.Println("Exiting...")
+
+			return
 		}
 
 		time.Sleep(*interval)
